@@ -11,6 +11,8 @@ services:
       - cluster.initial_master_nodes=elasticsearch
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ELASTIC_USERNAME=elastic"
+      - "ELASTIC_PASSWORD=changeme"
     ulimits:
       memlock:
         soft: -1
@@ -19,14 +21,33 @@ services:
       - data01:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
+      - 9300:9300
     networks:
       - elastic
+      
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.16.2
+    container_name: logstash
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xms512m -Xmx512m"
+    networks:
+      - elastic
+    depends_on:
+      - elasticsearch
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.16.2
     container_name: kibana
     volumes:
-      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
       - 5601:5601
     environment:
@@ -36,28 +57,6 @@ services:
       - elastic
     depends_on:
       - elasticsearch
-
-# # Container to monitor services running inside other containers
-  # metricbeat:
-    # image: docker.elastic.co/beats/metricbeat:7.6.2
-    # user: root
-    # container_name: metricbeat
-    # environment: 
-      # - ELASTICSEARCH_HOST=["http://192.168.0.10:9200"]
-      # - KIBANA_HOST=http://192.168.0.10:5601
-      # - ELASTICSEARCH_USERNAME=elastic
-      # - ELASTICSEARCH_PASSWORD=changeme
-    # volumes:
-      # - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro  # Mount the metricbeat configuration so users can make edits
-      # - /var/run/docker.sock:/var/run/docker.sock:ro  # Allows to report on docker from the hosts information
-      # - /proc:/hostfs/proc:ro  # Enables Metricbeat to monitor the Docker host rather than the Metricbeat container (these are used by the system module)
-      # - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-      # - /:/hostfs:ro  # Mounts the host filesystem so it can report on disk usage with the system module
-    # networks:
-      # - elastic
-    # depends_on: 
-      # - elasticsearch
-      # - kibana
       
 volumes:
   data01:
