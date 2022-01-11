@@ -1,0 +1,68 @@
+version: '2.2'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=localhost:9300
+      - cluster.initial_master_nodes=elasticsearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.16.2
+    container_name: kibana
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+    networks:
+      - elastic
+    depends_on:
+      - elasticsearch
+
+# # Container to monitor services running inside other containers
+  # metricbeat:
+    # image: docker.elastic.co/beats/metricbeat:7.6.2
+    # user: root
+    # container_name: metricbeat
+    # environment: 
+      # - ELASTICSEARCH_HOST=["http://192.168.0.10:9200"]
+      # - KIBANA_HOST=http://192.168.0.10:5601
+      # - ELASTICSEARCH_USERNAME=elastic
+      # - ELASTICSEARCH_PASSWORD=changeme
+    # volumes:
+      # - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro  # Mount the metricbeat configuration so users can make edits
+      # - /var/run/docker.sock:/var/run/docker.sock:ro  # Allows to report on docker from the hosts information
+      # - /proc:/hostfs/proc:ro  # Enables Metricbeat to monitor the Docker host rather than the Metricbeat container (these are used by the system module)
+      # - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      # - /:/hostfs:ro  # Mounts the host filesystem so it can report on disk usage with the system module
+    # networks:
+      # - elastic
+    # depends_on: 
+      # - elasticsearch
+      # - kibana
+      
+volumes:
+  data01:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge
