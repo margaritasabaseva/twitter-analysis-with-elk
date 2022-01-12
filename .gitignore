@@ -1,1 +1,2 @@
 .vagrant
+logstash/pipeline/logstash.conf
