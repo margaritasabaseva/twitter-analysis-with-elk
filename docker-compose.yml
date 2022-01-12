@@ -26,7 +26,8 @@ services:
       - elastic
       
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.16.2
+    build:
+      context: .
     container_name: logstash
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
