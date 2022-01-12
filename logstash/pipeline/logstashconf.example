@@ -1,0 +1,27 @@
+input {
+    twitter {
+        consumer_key => "${API_KEY}"
+        consumer_secret => "${API_KEY_SECRET}"
+        oauth_token => "${ACCESS_TOKEN}"
+        oauth_token_secret => "${ACCESS_TOKEN_SECRET}"
+        ignore_retweets => true
+        languages => ["en"]
+        keywords => [ "covid", "Covid-19", "omicron"]
+    }
+}
+
+filter {
+  sentimentalizer {
+    source => "message"
+  }
+}
+
+output {
+	elasticsearch {
+		hosts => "elasticsearch:9200"
+		user => "elastic"
+		password => "changeme"
+		index => "twitter"
+		ecs_compatibility => disabled
+	}
+}
